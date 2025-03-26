@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.185655737704918,
-        "y": 2.029047131147541
+        "x": 6.964856557377049,
+        "y": 1.8012807377049183
       },
       "isLocked": false,
       "linkedName": "ReefR2"
@@ -40,7 +40,7 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.0,
+    "maxVelocity": 3.5,
     "maxAcceleration": 3.5,
     "maxAngularVelocity": 720.0,
     "maxAngularAcceleration": 1200.0,

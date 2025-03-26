@@ -32,6 +32,8 @@ public class LedsConstants {
   // when the robot has a pose to align to - solid yellow
   public static final LEDPattern kReadyToAlign = LEDPattern.solid(Color.kYellow);
 
+  public static final LEDPattern kReefAligned = LEDPattern.solid(Color.kGreen).blink(kBlinkSpeed);
+
   // when the robot is aligning to a pose - progress bar
   public static final LEDPattern kReefAligning(DoubleSupplier supp) {
     return LEDPattern.gradient(

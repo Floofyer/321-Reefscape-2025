@@ -24,8 +24,8 @@ public class CoralEndEffectorIOReal implements CoralEndEffectorIO {
   private SparkMax motor; // motor controlling the end effector wheels
   private TimeOfFlight
       coralDistSensor; // TOF distance sensor for detecting whether or not there is a coral in the
+
   // intake
-  private TimeOfFlight algaeDistSensor;
 
   public CoralEndEffectorIOReal() {
     // motor initializatio & configuration
@@ -39,7 +39,6 @@ public class CoralEndEffectorIOReal implements CoralEndEffectorIO {
 
     // init distance sensor
     coralDistSensor = new TimeOfFlight(CoralEndEffectorConstants.kCoralSensorId);
-    algaeDistSensor = new TimeOfFlight(CoralEndEffectorConstants.kAlgaeSensorId);
   }
 
   // sets voltage of the coral intake wheels
@@ -54,8 +53,6 @@ public class CoralEndEffectorIOReal implements CoralEndEffectorIO {
     inputs.voltage = Volts.of(motor.getBusVoltage());
     inputs.hasCoral =
         coralDistSensor.getRange() < CoralEndEffectorConstants.kDetectionRange.in(Millimeter);
-    inputs.hasAlgae =
-        algaeDistSensor.getRange() < CoralEndEffectorConstants.kAlgaeDetectionRange.in(Millimeter);
     inputs.velocity = RPM.of(this.motor.getEncoder().getVelocity());
   }
 }

@@ -29,7 +29,6 @@ class CoralEndEffectorIOSim implements CoralEndEffectorIO {
 
   public CoralEndEffectorIOSim() {
     SmartDashboard.putBoolean("/SimInputs/CoralEndEffector/HasCoral", false);
-    SmartDashboard.putBoolean("/SimInputs/CoralEndEffector/HasAlgae", false);
   }
 
   @Override
@@ -38,7 +37,6 @@ class CoralEndEffectorIOSim implements CoralEndEffectorIO {
     inputs.voltage = Volts.of(simulation.getInputVoltage());
     inputs.velocity = RPM.of(simulation.getAngularVelocityRPM());
     inputs.hasCoral = SmartDashboard.getBoolean("/SimInputs/CoralEndEffector/HasCoral", false);
-    inputs.hasAlgae = SmartDashboard.getBoolean("/SimInputs/CoralEndEffector/HasAlgae", false);
   }
 
   @Override

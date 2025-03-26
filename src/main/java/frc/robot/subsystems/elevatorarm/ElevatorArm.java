@@ -17,6 +17,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
 import frc.robot.util.TunableConstant;
@@ -41,6 +42,7 @@ public class ElevatorArm extends SubsystemBase {
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private double goalAngle;
+  private boolean hasSeeded = false;
 
   // config for the arm
   private ElevatorArmConfig config;
@@ -163,7 +165,16 @@ public class ElevatorArm extends SubsystemBase {
   }
 
   public Command seedEncoder() {
-    return runOnce(() -> io.seedEncoderValues());
+    return Commands.runOnce(
+        () -> {
+          io.seedEncoderValues();
+          System.out.println("Seeded.");
+          this.hasSeeded = true;
+        });
+  }
+
+  public boolean hasSeeded() {
+    return hasSeeded;
   }
 
   /**

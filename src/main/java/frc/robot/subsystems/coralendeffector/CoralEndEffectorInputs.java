@@ -11,6 +11,5 @@ public class CoralEndEffectorInputs {
   public Voltage voltage; // voltage the end effector motor is currently being commanded to run at
   public boolean
       hasCoral; // whether or not the end effector has a coral in it, measured by a distance sensor
-  public boolean hasAlgae;
   public AngularVelocity velocity; // the angular velocity of the end effector wheels
 }

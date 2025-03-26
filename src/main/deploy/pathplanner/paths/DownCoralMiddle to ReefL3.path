@@ -9,19 +9,19 @@
       "prevControl": null,
       "nextControl": {
         "x": 1.9180327868852456,
-        "y": 1.681403688524589
+        "y": 1.6814036885245889
       },
       "isLocked": false,
       "linkedName": "DownCoralMiddle"
     },
     {
       "anchor": {
-        "x": 3.536372950819672,
-        "y": 2.652407786885245
+        "x": 3.596311475409836,
+        "y": 2.436629098360655
       },
       "prevControl": {
-        "x": 3.308606557377049,
-        "y": 2.4965676229508187
+        "x": 3.368545081967213,
+        "y": 2.2807889344262287
       },
       "nextControl": null,
       "isLocked": false,
@@ -40,7 +40,7 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.0,
+    "maxVelocity": 3.5,
     "maxAcceleration": 3.5,
     "maxAngularVelocity": 720.0,
     "maxAngularAcceleration": 1200.0,

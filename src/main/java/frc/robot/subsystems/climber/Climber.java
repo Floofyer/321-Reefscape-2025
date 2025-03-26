@@ -3,7 +3,6 @@ package frc.robot.subsystems.climber;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.epilogue.Logged;
@@ -44,7 +43,6 @@ public class Climber extends SubsystemBase {
     feedForward = new ArmFeedforward(0, config.kG(), 0);
 
     climbController.setTolerance(ClimberConstants.kControllerTolerance.in(Degrees));
-    climbController.enableContinuousInput(-180, 180);
     io.resetEncoder(ClimberConstants.kStartingAngle);
   }
 
@@ -74,29 +72,30 @@ public class Climber extends SubsystemBase {
         .andThen(goToAngle(() -> Degrees.of(desiredAngle.get())));
   }
 
-  // tunes kCurrentRampRate - how much should current be ramping per second
-  public Command tuneCurrentRampRate() {
-    TunableConstant climbCurrentRampRate =
+  // tunes kVoltageRampRate - how much should voltage be ramping per second
+  public Command tuneVoltageRampRate() {
+    TunableConstant climbVoltageRampRate =
         new TunableConstant(
-            "/Climber/ClimbCurrentRampRate", ClimberConstants.kClimbCurrentRampRate.in(Amps));
+            "/Climber/ClimbVoltageRampRate", ClimberConstants.kClimbVoltageRampRate.in(Volts));
 
     return runOnce(timer::restart)
         .andThen(() -> io.setLockServoAngle(ClimberConstants.kServoUnlockPosition))
         .andThen(
             Commands.run(
                     () ->
-                        io.setClimbCurrent(
-                            Amps.of( // Sets the motor to a current control mode, ramping up current
-                                // over time
-                                -Math.min(
-                                    climbCurrentRampRate.get() * timer.get(),
-                                    ClimberConstants.kClimbCurrent.in(Amps)))))
+                        io.setClimbVoltage(
+                            Volts
+                                .of( // Sets the motor to a voltage control mode, ramping up voltage
+                                    // over time
+                                    -Math.min(
+                                        climbVoltageRampRate.get() * timer.get(),
+                                        ClimberConstants.kClimbVoltage.in(Volts)))))
                 .until(
                     () ->
                         inputs.climbAngle.in(Degrees)
                             <= ClimberConstants.kClimbThreshold.in(Degrees)))
         .andThen(() -> io.setLockServoAngle(ClimberConstants.kServoLockPosition))
-        .andThen(Commands.run(() -> io.setClimbCurrent(Amps.of(0))));
+        .andThen(Commands.run(() -> io.setClimbVoltage(Volts.of(0))));
   }
 
   // creates placeholder implementation to disable robot
@@ -106,7 +105,7 @@ public class Climber extends SubsystemBase {
 
   /*
    * Climb command
-   * Courtesy of 6328's implementation <3
+   * Courtesy of 6328's implementation, but using voltage instead <3
    */
   public Command climb() {
     return runOnce(timer::restart)
@@ -114,18 +113,20 @@ public class Climber extends SubsystemBase {
         .andThen(
             Commands.run(
                     () ->
-                        io.setClimbCurrent(
-                            Amps.of( // Sets the motor to a current control mode, ramping up current
-                                // over time
-                                -Math.min(
-                                    ClimberConstants.kClimbCurrentRampRate.in(Amps) * timer.get(),
-                                    ClimberConstants.kClimbCurrent.in(Amps)))))
+                        io.setClimbVoltage(
+                            Volts
+                                .of( // Sets the motor to a voltage control mode, ramping up voltage
+                                    // over time
+                                    -Math.min(
+                                        ClimberConstants.kClimbVoltageRampRate.in(Volts)
+                                            * timer.get(),
+                                        ClimberConstants.kClimbVoltage.in(Volts)))))
                 .until(
                     () ->
                         inputs.climbAngle.in(Degrees)
                             <= ClimberConstants.kClimbThreshold.in(Degrees)))
         .andThen(() -> io.setLockServoAngle(ClimberConstants.kServoLockPosition))
-        .andThen(Commands.run(() -> io.setClimbCurrent(Amps.of(0))));
+        .andThen(Commands.run(() -> io.setClimbVoltage(Volts.of(0))));
   }
 
   // get to a desired angle by setting pivot voltage to sum of calculated pid and feedforward
@@ -134,9 +135,9 @@ public class Climber extends SubsystemBase {
         () -> {
           Voltage desiredVoltage =
               Volts.of(
-                  feedForward.calculate(desiredAngle.get().in(Radians), 0)
-                      + climbController.calculate(
-                          inputs.climbAngle.in(Degrees), desiredAngle.get().in(Degrees)));
+                  // feedForward.calculate(desiredAngle.get().in(Radians), 0)
+                  climbController.calculate(
+                      inputs.climbAngle.in(Degrees), desiredAngle.get().in(Degrees)));
 
           io.setLockServoAngle(
               ClimberConstants.kServoUnlockPosition); // unlocks servo before going to angle
@@ -149,6 +150,7 @@ public class Climber extends SubsystemBase {
     return run(
         () -> {
           io.setClimbVoltage(volts.get());
+          io.setLockServoAngle(ClimberConstants.kServoUnlockPosition);
         });
   }
 
@@ -157,20 +159,29 @@ public class Climber extends SubsystemBase {
     return run(
         () -> {
           io.setClimbCurrent(current.get());
+          io.setLockServoAngle(ClimberConstants.kServoUnlockPosition);
         });
   }
 
   public Command homeMechanism() {
     return run(() -> {
           io.setClimbVoltage(ClimberConstants.kClimbHomeVoltage);
+          io.setLockServoAngle(ClimberConstants.kServoUnlockPosition);
         })
-        .until(() -> inputs.limitSwitchHit)
+        .until(() -> inputs.climbCurrent.in(Amps) >= ClimberConstants.kClimbHomeCurrent.in(Amps))
         .andThen(
             () -> {
               io.resetEncoder(ClimberConstants.kStartingAngle);
               io.setClimbVoltage(Volts.zero());
               climbHomed = true;
             });
+  }
+
+  public Command zero() {
+    return runOnce(
+        () -> {
+          io.resetEncoder(ClimberConstants.kStartingAngle);
+        });
   }
 
   public boolean climbIsHomed() {

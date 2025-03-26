@@ -22,6 +22,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -46,6 +47,9 @@ public class DrivetrainSim implements SwerveDrive {
 
   private final SwerveDrivePoseEstimator reefPoseEstimator;
 
+  private final Pose2d kRedTopAutoStart = new Pose2d(10.2, 2.2, Rotation2d.kZero);
+  private final Pose2d kRedBotAutoStart = new Pose2d(10.2, 5.8, Rotation2d.kZero);
+
   public DrivetrainSim() {
     this.simConfig =
         DriveTrainSimulationConfig.Default()
@@ -67,7 +71,7 @@ public class DrivetrainSim implements SwerveDrive {
 
     this.simulatedDrive =
         new SelfControlledSwerveDriveSimulationWrapper(
-            new SwerveDriveSimulation(simConfig, new Pose2d(2, 2, Rotation2d.kZero)));
+            new SwerveDriveSimulation(simConfig, kRedBotAutoStart));
 
     this.headingController =
         new PIDController(
@@ -169,13 +173,32 @@ public class DrivetrainSim implements SwerveDrive {
     if (pose == null) return;
 
     ChassisSpeeds targetSpeeds =
-        new ChassisSpeeds(
-            xPoseController.calculate(getPose().getX(), pose.getX()),
-            yPoseController.calculate(getPose().getY(), pose.getY()),
-            thetaController.calculate(
-                getPose().getRotation().getRadians(), pose.getRotation().getRadians()));
+        DriverStation.isAutonomous()
+            ? new ChassisSpeeds(
+                xPoseController.calculate(getPose().getX(), pose.getX())
+                    + xPoseController.getSetpoint().velocity,
+                yPoseController.calculate(getPose().getY(), pose.getY())
+                    + yPoseController.getSetpoint().velocity,
+                thetaController.calculate(
+                        getPose().getRotation().getRadians(), pose.getRotation().getRadians())
+                    + thetaController.getSetpoint().velocity)
+            : new ChassisSpeeds(
+                xPoseController.calculate(getPose().getX(), pose.getX()),
+                yPoseController.calculate(getPose().getY(), pose.getY()),
+                thetaController.calculate(
+                    getPose().getRotation().getRadians(), pose.getRotation().getRadians()));
 
-    if (atPoseSetpoint()) targetSpeeds = new ChassisSpeeds();
+    final Pose2d currentPose = getPose();
+
+    if (currentPose.getTranslation().getDistance(alignmentSetpoint.pose().getTranslation())
+        < DrivetrainConstants.kAlignmentSetpointTranslationTolerance.in(Meters))
+      targetSpeeds = new ChassisSpeeds(0, 0, targetSpeeds.omegaRadiansPerSecond);
+
+    if (Math.abs(
+            currentPose.getRotation().minus(alignmentSetpoint.pose().getRotation()).getDegrees())
+        < DrivetrainConstants.kAlignmentSetpointRotationTolerance.in(Degrees))
+      targetSpeeds =
+          new ChassisSpeeds(targetSpeeds.vxMetersPerSecond, targetSpeeds.vyMetersPerSecond, 0);
 
     simulatedDrive.runChassisSpeeds(targetSpeeds, Translation2d.kZero, true, false);
   }

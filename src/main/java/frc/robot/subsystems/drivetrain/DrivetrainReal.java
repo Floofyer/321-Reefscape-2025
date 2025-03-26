@@ -36,6 +36,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotConstants;
 import frc.robot.util.MyAlliance;
 import java.util.function.DoubleSupplier;
 
@@ -98,7 +99,7 @@ public class DrivetrainReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder>
                   translationX.getAsDouble(),
                   translationY.getAsDouble(),
                   rotation.getAsDouble(),
-                  DrivetrainConstants.kLoopDt.in(Seconds));
+                  RobotConstants.kRobotLoopPeriod.in(Seconds));
 
           // x braking
           // if(Math.abs(newTranslationX) < DriveConstants.kDriveDeadband &&
@@ -133,7 +134,7 @@ public class DrivetrainReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder>
                   translationX.getAsDouble(),
                   translationY.getAsDouble(),
                   0,
-                  DrivetrainConstants.kLoopDt.in(Seconds));
+                  RobotConstants.kRobotLoopPeriod.in(Seconds));
 
           setControl(
               fieldCentricFacingAngleRequest
@@ -155,7 +156,7 @@ public class DrivetrainReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder>
                   translationX.getAsDouble(),
                   translationY.getAsDouble(),
                   rotation.getAsDouble(),
-                  DrivetrainConstants.kLoopDt.in(Seconds));
+                  RobotConstants.kRobotLoopPeriod.in(Seconds));
 
           setControl(
               fieldCentricRequest
@@ -198,12 +199,22 @@ public class DrivetrainReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder>
   @Override
   public void driveToFieldPose(Pose2d pose) {
     ChassisSpeeds targetSpeeds =
-        ChassisSpeeds.discretize(
-            xPoseController.calculate(getPose().getX(), pose.getX()),
-            yPoseController.calculate(getPose().getY(), pose.getY()),
-            thetaController.calculate(
-                getPose().getRotation().getRadians(), pose.getRotation().getRadians()),
-            DrivetrainConstants.kLoopDt.in(Seconds));
+        DriverStation.isAutonomous()
+            ? ChassisSpeeds.discretize(
+                xPoseController.calculate(getPose().getX(), pose.getX())
+                    + xPoseController.getSetpoint().velocity,
+                yPoseController.calculate(getPose().getY(), pose.getY())
+                    + yPoseController.getSetpoint().velocity,
+                thetaController.calculate(
+                        getPose().getRotation().getRadians(), pose.getRotation().getRadians())
+                    + thetaController.getSetpoint().velocity,
+                RobotConstants.kRobotLoopPeriod.in(Seconds))
+            : ChassisSpeeds.discretize(
+                xPoseController.calculate(getPose().getX(), pose.getX()),
+                yPoseController.calculate(getPose().getY(), pose.getY()),
+                thetaController.calculate(
+                    getPose().getRotation().getRadians(), pose.getRotation().getRadians()),
+                RobotConstants.kRobotLoopPeriod.in(Seconds));
 
     final var currentPose = getPose();
 
@@ -231,7 +242,7 @@ public class DrivetrainReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder>
   public void driveFixedHeading(double translationX, double translationY, Rotation2d rotation) {
     var speeds =
         ChassisSpeeds.discretize(
-            translationX, translationY, 0, DrivetrainConstants.kLoopDt.in(Seconds));
+            translationX, translationY, 0, RobotConstants.kRobotLoopPeriod.in(Seconds));
 
     setControl(
         fieldCentricFacingAngleRequest

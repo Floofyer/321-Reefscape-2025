@@ -8,20 +8,20 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.9899590163934426,
-        "y": 7.075870901639344
+        "x": 1.9726936416983882,
+        "y": 7.003415644499857
       },
       "isLocked": false,
       "linkedName": "UpCoralRight"
     },
     {
       "anchor": {
-        "x": 3.560348360655738,
-        "y": 5.361629098360655
+        "x": 3.536372950819672,
+        "y": 5.505481557377049
       },
       "prevControl": {
-        "x": 3.296618852459016,
-        "y": 5.63734631147541
+        "x": 3.1920001755327627,
+        "y": 6.101952700917475
       },
       "nextControl": null,
       "isLocked": false,
@@ -40,7 +40,7 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.0,
+    "maxVelocity": 3.5,
     "maxAcceleration": 3.5,
     "maxAngularVelocity": 720.0,
     "maxAngularAcceleration": 1200.0,

@@ -2,18 +2,20 @@
 package frc.robot.auto;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.FileVersionException;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.commands.ReefAlign;
 import frc.robot.commands.StationAlign;
@@ -29,6 +31,8 @@ import org.json.simple.parser.ParseException;
 @Logged
 public class AutomaticAutonomousMaker3000 {
 
+  private static final LinearVelocity kScorePathEndVelocity = MetersPerSecond.of(0);
+
   private CycleAutoChooser autoChooser = new CycleAutoChooser(5);
 
   private Field2d field = new Field2d();
@@ -40,19 +44,21 @@ public class AutomaticAutonomousMaker3000 {
       new CycleAutoConfig(
           StartingPosition.TOP,
           List.of(
-              new ScoringGroup(FeedLocation.UPCORALLEFT, ReefSide.REEFR1, Pole.RIGHTPOLE, Level.L4),
-              new ScoringGroup(FeedLocation.UPCORALLEFT, ReefSide.REEFL1, Pole.LEFTPOLE, Level.L4),
               new ScoringGroup(
-                  FeedLocation.UPCORALLEFT, ReefSide.REEFL1, Pole.RIGHTPOLE, Level.L4)));
+                  FeedLocation.UPCORALRIGHT, ReefSide.REEFR1, Pole.RIGHTPOLE, Level.L4),
+              new ScoringGroup(FeedLocation.UPCORALRIGHT, ReefSide.REEFL1, Pole.LEFTPOLE, Level.L4),
+              new ScoringGroup(
+                  FeedLocation.UPCORALRIGHT, ReefSide.REEFL1, Pole.RIGHTPOLE, Level.L4)));
 
   private static CycleAutoConfig kMidLaneTopAuto =
       new CycleAutoConfig(
           StartingPosition.MIDDLE,
           List.of(
-              new ScoringGroup(FeedLocation.UPCORALLEFT, ReefSide.REEFR2, Pole.RIGHTPOLE, Level.L4),
-              new ScoringGroup(FeedLocation.UPCORALLEFT, ReefSide.REEFL1, Pole.LEFTPOLE, Level.L4),
               new ScoringGroup(
-                  FeedLocation.UPCORALLEFT, ReefSide.REEFL1, Pole.RIGHTPOLE, Level.L4)));
+                  FeedLocation.UPCORALRIGHT, ReefSide.REEFR2, Pole.RIGHTPOLE, Level.L4),
+              new ScoringGroup(FeedLocation.UPCORALRIGHT, ReefSide.REEFL1, Pole.LEFTPOLE, Level.L4),
+              new ScoringGroup(
+                  FeedLocation.UPCORALRIGHT, ReefSide.REEFL1, Pole.RIGHTPOLE, Level.L4)));
 
   private static CycleAutoConfig kMidLaneBotAuto =
       new CycleAutoConfig(
@@ -88,9 +94,9 @@ public class AutomaticAutonomousMaker3000 {
               new ScoringGroup(
                   FeedLocation.DOWNCORALLEFT, ReefSide.REEFR3, Pole.LEFTPOLE, Level.L4),
               new ScoringGroup(
-                  FeedLocation.DOWNCORALLEFT, ReefSide.REEFL3, Pole.LEFTPOLE, Level.L4),
+                  FeedLocation.DOWNCORALLEFT, ReefSide.REEFL3, Pole.RIGHTPOLE, Level.L4),
               new ScoringGroup(
-                  FeedLocation.DOWNCORALLEFT, ReefSide.REEFL3, Pole.RIGHTPOLE, Level.L4)));
+                  FeedLocation.DOWNCORALLEFT, ReefSide.REEFL3, Pole.LEFTPOLE, Level.L4)));
 
   private SwerveDrive drive;
   private CoralSuperstructure coralSuperstructure;
@@ -113,6 +119,7 @@ public class AutomaticAutonomousMaker3000 {
 
     SmartDashboard.putData("Autos/PreBuiltAuto", preBuiltAuto);
     SmartDashboard.putData("Autos/AutoVisualizerField", field);
+    // SmartDashboard.putData("Autos/TotalTime", totalTime);
 
     // Driver has to click submit to make and view the autonomous path
     SmartDashboard.putData(
@@ -190,8 +197,12 @@ public class AutomaticAutonomousMaker3000 {
     pathError = "";
     try {
       Command auto =
-          Commands.waitUntil(() -> coralSuperstructure.getElevator().elevatorIsHomed())
+          coralSuperstructure
+              .getElevator()
+              .homeEncoder()
+              .onlyIf(() -> !coralSuperstructure.getElevator().elevatorIsHomed())
               .withTimeout(2);
+
       List<PathPlannerPath> paths = new ArrayList<>();
 
       ReefSide lastReefSide = config.scoringGroup.get(0).reefSide;
@@ -207,10 +218,23 @@ public class AutomaticAutonomousMaker3000 {
                   config.startingPosition.pathID
                       + " to "
                       + config.scoringGroup.get(i).reefSide.pathID);
+
+          PathPlannerPath pathNewGoalEndState =
+              new PathPlannerPath(
+                  path.getWaypoints(),
+                  path.getRotationTargets(),
+                  path.getPointTowardsZones(),
+                  path.getConstraintZones(),
+                  path.getEventMarkers(),
+                  path.getGlobalConstraints(),
+                  path.getIdealStartingState(),
+                  new GoalEndState(kScorePathEndVelocity, path.getGoalEndState().rotation()),
+                  path.isReversed());
+
           auto =
               auto.andThen(
                   withScoring(
-                      toPathCommand(path, true).asProxy(),
+                      toPathCommand(pathNewGoalEndState, true),
                       config.scoringGroup.get(i).pole,
                       config.scoringGroup.get(i).level));
           paths.add(path);
@@ -226,14 +250,25 @@ public class AutomaticAutonomousMaker3000 {
                       + " to "
                       + config.scoringGroup.get(i).reefSide.pathID);
 
+          PathPlannerPath scorePathNewGoalEndState =
+              new PathPlannerPath(
+                  scorePath.getWaypoints(),
+                  scorePath.getRotationTargets(),
+                  scorePath.getPointTowardsZones(),
+                  scorePath.getConstraintZones(),
+                  scorePath.getEventMarkers(),
+                  scorePath.getGlobalConstraints(),
+                  scorePath.getIdealStartingState(),
+                  new GoalEndState(kScorePathEndVelocity, scorePath.getGoalEndState().rotation()),
+                  scorePath.isReversed());
+
           auto =
               auto.andThen(
                       withIntaking(
-                          toPathCommand(intakePath).asProxy(),
-                          config.scoringGroup.get(i).feedLocation))
+                          toPathCommand(intakePath), config.scoringGroup.get(i).feedLocation))
                   .andThen(
                       withScoring(
-                          toPathCommand(scorePath).asProxy(),
+                          toPathCommand(scorePathNewGoalEndState),
                           config.scoringGroup.get(i).pole,
                           config.scoringGroup.get(i).level));
           lastReefSide = config.scoringGroup.get(i).reefSide;
@@ -242,6 +277,17 @@ public class AutomaticAutonomousMaker3000 {
           paths.add(scorePath);
         }
       }
+
+      auto =
+          auto.andThen(
+              drive
+                  .driveFieldCentric(() -> 0, () -> 0, () -> 0)
+                  .alongWith(
+                      coralSuperstructure.goToSetpointPID(
+                          () -> CoralScorerSetpoint.NEUTRAL.getElevatorHeight(),
+                          () -> CoralScorerSetpoint.PREALIGN.getArmAngle()),
+                      coralSuperstructure.stopIntake()));
+
       return new PathsAndAuto(auto, paths);
     } catch (Exception e) {
       pathError = "Path doesn't exist";
@@ -258,17 +304,20 @@ public class AutomaticAutonomousMaker3000 {
           case UPCORALRIGHT, DOWNCORALRIGHT -> StationAlign.goToNearestRightAlign(drive);
         };
 
-    return path.deadlineFor(
+    return path.andThen(pathCmd)
+        .withDeadline(
             coralSuperstructure
                 .goToSetpointPID(
                     () -> CoralScorerSetpoint.NEUTRAL.getElevatorHeight(),
-                    () -> CoralScorerSetpoint.NEUTRAL.getArmAngle())
-                .asProxy())
-        .andThen(
-            pathCmd
-                .asProxy()
-                .alongWith(coralSuperstructure.feedCoral().asProxy())
-                .until(() -> coralSuperstructure.hasCoral()));
+                    () -> CoralScorerSetpoint.PREALIGN.getArmAngle())
+                .alongWith(coralSuperstructure.stopIntake())
+                .until(
+                    () ->
+                        coralSuperstructure.atTargetState(
+                            CoralScorerSetpoint.NEUTRAL.getElevatorHeight(),
+                            CoralScorerSetpoint.PREALIGN.getArmAngle()))
+                .andThen(
+                    coralSuperstructure.feedCoral().until(() -> coralSuperstructure.hasCoral())));
   }
 
   public Command withScoring(Command path, Pole pole, Level level) {
@@ -289,45 +338,33 @@ public class AutomaticAutonomousMaker3000 {
 
     return path.deadlineFor(
             coralSuperstructure
-                .goToSetpointPID(() -> preAlignElevatorHeight, () -> setpoint.getArmAngle())
-                .asProxy())
+                .goToSetpointProfiled(() -> preAlignElevatorHeight, () -> setpoint.getArmAngle())
+                .alongWith(coralSuperstructure.getEndEffector().stallCoralIfDetected()))
         .andThen(
             ReefAlign.alignToReef(
                     drive, () -> pole == Pole.LEFTPOLE ? ReefPosition.LEFT : ReefPosition.RIGHT)
-                .asProxy()
                 .alongWith(
                     coralSuperstructure.goToSetpointPID(
-                        () -> preAlignElevatorHeight, () -> setpoint.getArmAngle()))
-                .asProxy()
+                        () -> preAlignElevatorHeight, () -> setpoint.getArmAngle()),
+                    coralSuperstructure.getEndEffector().stallCoralIfDetected())
                 .until(() -> drive.atPoseSetpoint())
-                .andThen(coralSuperstructure.goToSetpointProfiled(() -> setpoint).asProxy())
-                .until(() -> coralSuperstructure.atTargetState())
-                .withTimeout(2.5))
+                .withTimeout(2.5)
+                .andThen(
+                    coralSuperstructure
+                        .goToSetpointProfiled(() -> setpoint)
+                        .alongWith(coralSuperstructure.getEndEffector().stallCoralIfDetected())
+                        .until(() -> coralSuperstructure.atTargetState(setpoint))))
         .andThen(
             ReefAlign.alignToReef(
                     drive, () -> pole == Pole.LEFTPOLE ? ReefPosition.LEFT : ReefPosition.RIGHT)
-                .asProxy()
-                .alongWith(coralSuperstructure.goToSetpointProfiled(() -> setpoint).asProxy())
-                .asProxy()
+                .alongWith(coralSuperstructure.goToSetpointProfiled(() -> setpoint))
                 .withDeadline(
-                    Commands.waitSeconds(1)
+                    Commands.waitSeconds(0.5)
                         .andThen(
                             coralSuperstructure
                                 .outtakeCoral()
-                                .asProxy()
                                 // .until(() -> !coralSuperstructure.hasCoral())
-                                .withTimeout(0.5))))
-        .finallyDo(
-            () -> {
-              // yucky. This is to prevent us from smashing into reef
-              CommandScheduler.getInstance()
-                  .schedule(
-                      coralSuperstructure
-                          .goToSetpointPID(
-                              () -> CoralScorerSetpoint.NEUTRAL.getElevatorHeight(),
-                              () -> CoralScorerSetpoint.PREALIGN.getArmAngle())
-                          .asProxy());
-            });
+                                .withTimeout(0.5))));
   }
 
   private Command toPathCommand(PathPlannerPath path, boolean zero) {

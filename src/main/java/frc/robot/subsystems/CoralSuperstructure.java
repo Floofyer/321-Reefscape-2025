@@ -4,6 +4,7 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.epilogue.NotLogged;
@@ -71,6 +72,10 @@ public class CoralSuperstructure {
                 }));
   }
 
+  public Command stopIntake() {
+    return endEffector.runAtVelocity(() -> RPM.zero());
+  }
+
   public void goToSetpoint(CoralScorerSetpoint setpoint) {
     goToSetpoint(setpoint.getElevatorHeight(), setpoint.getArmAngle());
   }
@@ -101,6 +106,10 @@ public class CoralSuperstructure {
     return endEffector.outtakeCoral();
   }
 
+  public Command knockAlgae() {
+    return endEffector.runAtVelocity(() -> CoralEndEffectorConstants.kAlgaeKnockRPM);
+  }
+
   public Distance getTargetHeight() {
     return targetHeight;
   }
@@ -113,15 +122,10 @@ public class CoralSuperstructure {
     return endEffector.hasCoral();
   }
 
-  public Command knockAlgae() {
-    return endEffector.runAtVelocity(() -> CoralEndEffectorConstants.kAlgaeOuttakeRPM);
-  }
-
   public Command tune() {
     TunableConstant armAngle =
         new TunableConstant(
-            "/CoralSuperstructure/ArmAngle",
-            CoralScorerSetpoint.PREALIGN.getArmAngle().in(Degrees));
+            "/CoralSuperstructure/ArmAngle", CoralScorerSetpoint.NEUTRAL.getArmAngle().in(Degrees));
     TunableConstant height =
         new TunableConstant(
             "/CoralSuperstructure/ElevatorHeight",
@@ -133,25 +137,28 @@ public class CoralSuperstructure {
         .andThen(arm.goToAngleProfiled(() -> Degrees.of(armAngle.get())));
   }
 
+  @NotLogged
   public Elevator getElevator() {
     return elevator;
   }
 
+  @NotLogged
+  public CoralEndEffector getEndEffector() {
+    return endEffector;
+  }
+
   public enum CoralScorerSetpoint {
     // TODO: determine angles empirically
-    NEUTRAL(
-        ElevatorConstants.kElevatorStartingHeight.plus(Meters.of(0.1)),
-        Degrees.of(-40)), // TODO: make
-    FEED_CORAL(Meters.of(0.965), Degrees.of(-87)),
-    L1(Inches.of(45), Degrees.of(30)), // TODO: actually tune
-    L2(Meters.of(0.95).minus(Inches.of(0.5)), Degrees.of(95)),
+    NEUTRAL(ElevatorConstants.kElevatorStartingHeight.plus(Meters.of(0.1)), Degrees.of(-40)),
+    FEED_CORAL(Meters.of(0.885), Degrees.of(-87)),
+    L1(Inches.of(45), Degrees.of(30)),
+    L2(Meters.of(0.96), Degrees.of(95)),
     L3(Meters.of(1.3).plus(Inches.of(1.25)), Degrees.of(95)),
-    L4(Meters.of(2.06).plus(Inches.of(1)), Degrees.of(85)),
-    ALGAE_LOW(Meters.of(0.9), Degrees.of(-20)), // TODO: actually tune
-    ALGAE_HIGH(Meters.of(1.3), Degrees.of(-20)), // TODO: actually tune
-    PREALIGN(Inches.of(50), Degrees.of(120)),
-    CLIMB(Meters.of(1.4), Degrees.of(0)),
-    BARGE(Meters.of(2), Degrees.of(40));
+    L4(Meters.of(2.06).plus(Inches.of(0.5)), Degrees.of(85)),
+    ALGAE_LOW(Meters.of(1), Degrees.of(40)),
+    ALGAE_HIGH(Meters.of(1.4), Degrees.of(40)),
+    PREALIGN(Inches.of(55), Degrees.of(120)),
+    CLIMB(Meters.of(1.1), Degrees.of(0));
 
     private Distance elevatorHeight; // the height of the elevator to got
     private Angle armAngle; // the angle the arm should go to

@@ -4,7 +4,6 @@ package frc.robot.subsystems.climber;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.revrobotics.spark.SparkBase.ControlType;
@@ -15,11 +14,9 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.EncoderConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Servo;
 
 /*
@@ -29,11 +26,9 @@ import edu.wpi.first.wpilibj.Servo;
 @Logged
 public class ClimberIOSpark implements ClimberIO {
 
-  public static final ClimberConfig config = new ClimberConfig(0, 0, 0, 0);
+  public static final ClimberConfig config = new ClimberConfig(2, 0, 0, 0);
 
   private SparkMax climbMotor = new SparkMax(ClimberConstants.kMotorId, MotorType.kBrushless);
-
-  private DigitalInput homingLimitSwitch = new DigitalInput(ClimberConstants.kLimitSwitchPort);
 
   private final Servo climbServo = new Servo(ClimberConstants.kServoPort);
 
@@ -75,11 +70,9 @@ public class ClimberIOSpark implements ClimberIO {
     double rawAngle = climbMotor.getEncoder().getPosition();
 
     // Update inputs with the modulus-adjusted angle
-    inputs.climbAngle =
-        Radians.of((MathUtil.inputModulus(Math.toRadians(rawAngle), 0, 2 * Math.PI)));
+    inputs.climbAngle = Degrees.of(rawAngle);
     inputs.climbVelocity = DegreesPerSecond.of(climbMotor.getEncoder().getVelocity());
     inputs.climbCurrent = Amps.of(climbMotor.getOutputCurrent());
-    inputs.limitSwitchHit = homingLimitSwitch.get();
   }
 
   public void resetEncoder(Angle angle) {

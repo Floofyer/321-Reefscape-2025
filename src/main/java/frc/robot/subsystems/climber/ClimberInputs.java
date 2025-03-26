@@ -11,5 +11,4 @@ public class ClimberInputs {
   public Current climbCurrent; // current that the climb will be running
   public Angle climbAngle; // climb angle
   public AngularVelocity climbVelocity; // climb velocity
-  public boolean limitSwitchHit;
 }

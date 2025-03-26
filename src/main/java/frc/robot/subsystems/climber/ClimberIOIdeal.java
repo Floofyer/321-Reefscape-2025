@@ -19,7 +19,6 @@ public class ClimberIOIdeal implements ClimberIO {
     inputs.climbAngle = Degrees.of(0);
     inputs.climbVelocity = DegreesPerSecond.of(0);
     inputs.climbCurrent = Amps.zero();
-    inputs.limitSwitchHit = false;
   }
 
   public void setClimbVoltage(Voltage volts) {}

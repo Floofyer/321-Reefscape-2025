@@ -12,7 +12,6 @@ public class CoralEndEffectorConstants {
   // Motor configuration
   public static final int kMotorPort = 16;
   public static final int kCoralSensorId = 21;
-  public static final int kAlgaeSensorId = 22;
   public static final boolean kInvertedMotor = true;
   public static final int kCurrentLimit = 40;
 
@@ -22,15 +21,12 @@ public class CoralEndEffectorConstants {
 
   // Setpoints
   public static final AngularVelocity kCoralIntakeRPM = RPM.of(3000);
-  public static final AngularVelocity kCoralOuttakeRPM = RPM.of(-1000);
-  public static final AngularVelocity kCoralStallRPM = RPM.of(1000);
-  public static final AngularVelocity kAlgaeIntakeRPM = RPM.of(-3000);
-  public static final AngularVelocity kAlgaeOuttakeRPM = RPM.of(3000);
-  public static final AngularVelocity kAlgaeStallRPM = RPM.of(-1000);
+  public static final AngularVelocity kCoralOuttakeRPM = RPM.of(-1500);
+  public static final AngularVelocity kCoralStallRPM = RPM.of(500);
+  public static final AngularVelocity kAlgaeKnockRPM = RPM.of(-3000);
 
   // Tuned constants
   public static final Distance kDetectionRange = Millimeters.of(100);
-  public static final Distance kAlgaeDetectionRange = Millimeters.of(200);
 
   // for detecting if the end effector is intaking
   public static final AngularVelocity kRPMTolerance = RPM.of(240);
